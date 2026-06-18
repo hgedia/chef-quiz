@@ -1,0 +1,2388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Core Theory Quiz</title>
+<style>
+  :root {
+    --bg: #0f0e17;
+    --surface: #1a1927;
+    --card: #232233;
+    --border: #2e2d45;
+    --gold: #f0a500;
+    --gold-light: #ffd166;
+    --green: #06d6a0;
+    --red: #ef476f;
+    --blue: #118ab2;
+    --text: #fffffe;
+    --muted: #a7a9be;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+  .screen { display: none; }
+  .screen.active { display: flex; }
+
+  /* ── WELCOME ── */
+  #welcome {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 2rem;
+    text-align: center;
+    background: radial-gradient(ellipse at 50% 0%, #2a1a00 0%, var(--bg) 60%);
+  }
+  .chef-hat { font-size: 5rem; margin-bottom: 1rem; animation: float 3s ease-in-out infinite; }
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+  #welcome h1 {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--gold), var(--gold-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: .5rem;
+  }
+  #welcome .subtitle {
+    color: var(--muted);
+    font-size: 1.1rem;
+    margin-bottom: 2.5rem;
+  }
+  .welcome-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 2.5rem;
+    max-width: 480px;
+    width: 100%;
+  }
+  .welcome-card h2 { font-size: 1.3rem; margin-bottom: 1.5rem; color: var(--gold-light); }
+  .welcome-card label { display: block; margin-bottom: .4rem; color: var(--muted); font-size: .9rem; }
+  .welcome-card input {
+    width: 100%;
+    padding: .85rem 1rem;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 1.1rem;
+    transition: border-color .2s;
+    margin-bottom: 1.5rem;
+  }
+  .welcome-card input:focus { outline: none; border-color: var(--gold); }
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .75rem;
+    margin-bottom: 2rem;
+  }
+  .info-item {
+    background: var(--surface);
+    border-radius: 8px;
+    padding: .75rem;
+    text-align: center;
+    font-size: .85rem;
+    color: var(--muted);
+  }
+  .info-item strong { display: block; color: var(--gold-light); font-size: 1.2rem; }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .85rem 2rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all .2s;
+    text-decoration: none;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--gold), #e08c00);
+    color: #000;
+    width: 100%;
+    justify-content: center;
+    font-size: 1.1rem;
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(240,165,0,.35); }
+  .btn-secondary {
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover { border-color: var(--gold); color: var(--gold); }
+  .btn-danger { background: var(--red); color: #fff; }
+  .btn-danger:hover { background: #d63658; }
+
+  /* ── QUIZ ── */
+  #quiz { flex-direction: column; min-height: 100vh; }
+
+  .quiz-header {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .quiz-header .user-info {
+    font-weight: 700;
+    color: var(--gold-light);
+    font-size: 1rem;
+  }
+  .timer-wrap {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: .4rem .9rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    min-width: 100px;
+    justify-content: center;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.6} }
+  .progress-bar-outer {
+    height: 4px;
+    background: var(--border);
+    width: 100%;
+  }
+  .progress-bar-inner {
+    height: 100%;
+    background: linear-gradient(90deg, var(--gold), var(--gold-light));
+    transition: width .3s;
+  }
+
+  .quiz-body {
+    display: flex;
+    flex: 1;
+    gap: 0;
+  }
+
+  /* Flagged dropdown */
+  .flagged-btn {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: .4rem .85rem;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: .9rem;
+    font-weight: 600;
+    transition: all .2s;
+    position: relative;
+  }
+  .flagged-btn.has-flags { border-color: var(--gold-light); color: var(--gold-light); background: #2a1e00; }
+  .flagged-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .flagged-panel {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: var(--card);
+    border: 1px solid var(--gold-light);
+    border-radius: var(--radius);
+    min-width: 240px;
+    max-height: 320px;
+    overflow-y: auto;
+    z-index: 100;
+    box-shadow: 0 8px 32px rgba(0,0,0,.5);
+  }
+  .flagged-panel.open { display: block; }
+  .flagged-panel-header {
+    padding: .7rem 1rem;
+    border-bottom: 1px solid var(--border);
+    font-size: .8rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .08em;
+  }
+  .flagged-panel-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: .6rem 1rem;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    transition: background .15s;
+    font-size: .9rem;
+  }
+  .flagged-panel-item:last-child { border-bottom: none; }
+  .flagged-panel-item:hover { background: var(--surface); }
+  .flagged-panel-item .fpi-num { color: var(--gold-light); font-weight: 700; }
+  .flagged-panel-item .fpi-topic { color: var(--muted); font-size: .8rem; }
+  .flagged-panel-empty { padding: 1rem; color: var(--muted); font-size: .9rem; text-align: center; }
+  .flagged-nav-row {
+    display: flex;
+    gap: .5rem;
+    justify-content: center;
+    margin-top: .75rem;
+  }
+  .btn-flagged-nav {
+    display: none;
+    align-items: center;
+    gap: .35rem;
+    padding: .45rem .9rem;
+    border-radius: 8px;
+    border: 1px solid var(--gold-light);
+    background: #2a1e00;
+    color: var(--gold-light);
+    cursor: pointer;
+    font-size: .85rem;
+    font-weight: 600;
+    transition: all .2s;
+  }
+  .btn-flagged-nav:hover { background: #3d2d00; }
+  .btn-flagged-nav.visible { display: inline-flex; }
+
+  /* Topic breakdown */
+  .topic-breakdown {
+    max-width: 720px;
+    width: 100%;
+    margin-bottom: 2rem;
+  }
+  .topic-breakdown h2 { font-size: 1.4rem; margin-bottom: 1.25rem; color: var(--gold-light); border-bottom: 1px solid var(--border); padding-bottom: .75rem; }
+  .weak-areas-box {
+    background: #2a1000;
+    border: 1px solid #8b3a00;
+    border-radius: 10px;
+    padding: 1.1rem 1.4rem;
+    margin-bottom: 1.25rem;
+  }
+  .weak-areas-box h3 { font-size: 1rem; color: #ff9f43; margin-bottom: .6rem; }
+  .weak-areas-box ul { list-style: none; display: flex; flex-wrap: wrap; gap: .5rem; }
+  .weak-areas-box ul li {
+    background: #3d1800;
+    border: 1px solid #8b3a00;
+    border-radius: 20px;
+    padding: .25rem .75rem;
+    font-size: .85rem;
+    color: #ff9f43;
+  }
+  .strong-areas-box {
+    background: #001f12;
+    border: 1px solid #064d28;
+    border-radius: 10px;
+    padding: 1.1rem 1.4rem;
+    margin-bottom: 1.25rem;
+  }
+  .strong-areas-box h3 { font-size: 1rem; color: var(--green); margin-bottom: .6rem; }
+  .strong-areas-box ul { list-style: none; display: flex; flex-wrap: wrap; gap: .5rem; }
+  .strong-areas-box ul li {
+    background: #002b18;
+    border: 1px solid #064d28;
+    border-radius: 20px;
+    padding: .25rem .75rem;
+    font-size: .85rem;
+    color: var(--green);
+  }
+  .topic-row {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    padding: .6rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .topic-row:last-child { border-bottom: none; }
+  .topic-row-name { width: 130px; font-size: .9rem; flex-shrink: 0; }
+  .topic-bar-wrap { flex: 1; background: var(--border); border-radius: 20px; height: 10px; overflow: hidden; }
+  .topic-bar-fill { height: 100%; border-radius: 20px; transition: width .4s; }
+  .topic-row-score { font-size: .85rem; font-weight: 700; width: 70px; text-align: right; flex-shrink: 0; }
+
+  /* Main question area */
+  .question-area {
+    flex: 1;
+    padding: 2rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .question-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 2rem;
+    max-width: 720px;
+    width: 100%;
+  }
+  .question-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    gap: .5rem;
+  }
+  .q-counter {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: .3rem .75rem;
+    font-size: .85rem;
+    color: var(--muted);
+  }
+  .topic-tag {
+    background: #1e2d40;
+    border: 1px solid var(--blue);
+    border-radius: 20px;
+    padding: .2rem .7rem;
+    font-size: .78rem;
+    color: var(--blue);
+  }
+  .flag-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: .3rem .75rem;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: .82rem;
+    display: flex;
+    align-items: center;
+    gap: .3rem;
+    transition: all .2s;
+  }
+  .flag-btn.flagged { border-color: var(--gold-light); color: var(--gold-light); background: #3d2d00; }
+  .flag-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .question-text {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1.75rem;
+    line-height: 1.5;
+  }
+  .options { display: flex; flex-direction: column; gap: .75rem; margin-bottom: 2rem; }
+  .option {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .option:hover { border-color: var(--gold); background: #1e1c30; }
+  .option.selected { border-color: var(--blue); background: #0a2030; }
+  .option input[type=radio] { display: none; }
+  .option-letter {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: .9rem;
+    flex-shrink: 0;
+    transition: all .2s;
+  }
+  .option.selected .option-letter { background: var(--blue); color: #fff; }
+  .option-text { font-size: 1rem; padding-top: 4px; }
+  .question-nav {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .submit-area {
+    max-width: 720px;
+    width: 100%;
+    margin-top: 1.5rem;
+    text-align: center;
+  }
+  .submit-note { color: var(--muted); font-size: .9rem; margin-bottom: .75rem; }
+
+  /* ── RESULTS ── */
+  #results {
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 2rem;
+    background: radial-gradient(ellipse at 50% 0%, #1a1200 0%, var(--bg) 60%);
+  }
+  .results-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    max-width: 700px;
+    width: 100%;
+  }
+  .results-header h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: .5rem; }
+  .score-circle {
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    border: 6px solid var(--gold);
+    background: var(--card);
+    position: relative;
+  }
+  .score-pct { font-size: 2.8rem; font-weight: 900; color: var(--gold-light); line-height: 1; }
+  .score-label { font-size: .85rem; color: var(--muted); }
+  .rank-card {
+    background: var(--card);
+    border: 2px solid var(--gold);
+    border-radius: var(--radius);
+    padding: 2rem;
+    max-width: 600px;
+    width: 100%;
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  .rank-emoji { font-size: 4rem; margin-bottom: .5rem; }
+  .rank-name { font-size: 2rem; font-weight: 800; color: var(--gold-light); margin-bottom: .5rem; }
+  .rank-desc { color: var(--muted); font-size: 1rem; line-height: 1.6; }
+  .stats-row {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    max-width: 600px;
+    width: 100%;
+  }
+  .stat-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.5rem;
+    text-align: center;
+    flex: 1;
+    min-width: 100px;
+  }
+  .stat-box .stat-num { font-size: 2rem; font-weight: 800; }
+  .stat-box .stat-lbl { color: var(--muted); font-size: .85rem; }
+  .stat-box.correct .stat-num { color: var(--green); }
+  .stat-box.wrong .stat-num { color: var(--red); }
+  .stat-box.skipped .stat-num { color: var(--muted); }
+
+  /* Review section */
+  .review-section {
+    max-width: 720px;
+    width: 100%;
+    margin-bottom: 3rem;
+  }
+  .review-section h2 {
+    font-size: 1.4rem;
+    margin-bottom: 1.25rem;
+    color: var(--gold-light);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: .75rem;
+  }
+  .review-filters {
+    display: flex;
+    gap: .5rem;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+  }
+  .filter-btn {
+    padding: .4rem 1rem;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    cursor: pointer;
+    font-size: .85rem;
+    transition: all .2s;
+  }
+  .filter-btn.active { background: var(--gold); border-color: var(--gold); color: #000; font-weight: 700; }
+  .review-item {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+    border-left: 4px solid var(--border);
+  }
+  .review-item.correct-ans { border-left-color: var(--green); }
+  .review-item.wrong-ans { border-left-color: var(--red); }
+  .review-item.skipped-ans { border-left-color: var(--muted); }
+  .review-qnum {
+    font-size: .78rem;
+    color: var(--muted);
+    margin-bottom: .4rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: .3rem;
+  }
+  .review-qnum .result-badge {
+    padding: .15rem .6rem;
+    border-radius: 20px;
+    font-size: .75rem;
+    font-weight: 600;
+  }
+  .badge-correct { background: #0d3d2a; color: var(--green); }
+  .badge-wrong { background: #3d1020; color: var(--red); }
+  .badge-skip { background: var(--surface); color: var(--muted); }
+  .review-question { font-weight: 600; margin-bottom: .75rem; font-size: 1rem; }
+  .review-options-list { list-style: none; margin-bottom: .75rem; }
+  .review-options-list li {
+    padding: .4rem .75rem;
+    border-radius: 6px;
+    font-size: .9rem;
+    margin-bottom: .3rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+  }
+  .review-options-list li.is-correct { background: #0d3d2a; color: var(--green); }
+  .review-options-list li.is-wrong-pick { background: #3d1020; color: var(--red); }
+  .review-ref {
+    font-size: .8rem;
+    color: var(--blue);
+    display: flex;
+    align-items: center;
+    gap: .35rem;
+    margin-top: .5rem;
+  }
+
+  /* Mode selection */
+  .mode-label { font-size: .85rem; color: var(--muted); margin-bottom: .75rem; }
+  .mode-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem; margin-bottom: .5rem; }
+  .mode-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .3rem;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem .75rem;
+    cursor: pointer;
+    transition: all .2s;
+    text-align: center;
+  }
+  .mode-card:hover { border-color: var(--gold); background: #1e1c2e; transform: translateY(-2px); }
+  .mode-card:focus { outline: none; border-color: var(--gold); }
+  .mode-icon { font-size: 1.6rem; }
+  .mode-title { font-size: .9rem; font-weight: 700; color: var(--text); }
+  .mode-desc { font-size: .75rem; color: var(--muted); }
+  @media (max-width: 480px) { .mode-options { grid-template-columns: 1fr; } }
+
+  /* Skip warning */
+  .skip-warning {
+    display: none;
+    align-items: center;
+    gap: .5rem;
+    background: #2a0a12;
+    border: 1px solid var(--red);
+    border-radius: 8px;
+    padding: .6rem 1rem;
+    margin-top: .75rem;
+    font-size: .9rem;
+    color: #ff8fa3;
+    animation: shake .3s ease;
+  }
+  .skip-warning.show { display: flex; }
+  @keyframes shake {
+    0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)}
+  }
+
+  /* Flagged review banner */
+  .flag-review-bar {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    background: #2a1e00;
+    border: 1px solid var(--gold-light);
+    border-radius: 8px;
+    padding: .6rem 1rem;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+  }
+  .flag-review-bar.active { display: flex; }
+  .flag-review-bar .frb-label { color: var(--gold-light); font-size: .9rem; font-weight: 600; }
+  .flag-review-bar .frb-back {
+    background: none;
+    border: 1px solid var(--gold-light);
+    border-radius: 6px;
+    color: var(--gold-light);
+    padding: .25rem .7rem;
+    cursor: pointer;
+    font-size: .82rem;
+    transition: all .2s;
+  }
+  .flag-review-bar .frb-back:hover { background: #3d2d00; }
+
+  /* Responsive */
+  @media (max-width: 640px) {
+    .question-area { padding: 1rem; }
+    .question-card { padding: 1.25rem; }
+    .question-text { font-size: 1.05rem; }
+    .quiz-header { padding: .75rem 1rem; }
+  }
+  @media (max-width: 480px) {
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════ WELCOME ══════════════ -->
+<div id="welcome" class="screen active">
+  <div class="chef-hat">👨‍🍳</div>
+  <h1>Core Theory Quiz</h1>
+  <p class="subtitle">Test your culinary knowledge from the Core Certificate notes</p>
+  <div class="welcome-card">
+    <h2>Ready to prove your kitchen credentials?</h2>
+    <label for="playerName">Your Name</label>
+    <input type="text" id="playerName" placeholder="e.g. Gordon, Jamie, Nigella…" maxlength="40" autocomplete="off" onkeydown="if(event.key==='Enter')document.querySelector('.mode-card').focus()">
+    <p class="mode-label">Choose your quiz:</p>
+    <div class="mode-options">
+      <button class="mode-card" onclick="startQuiz('mini')">
+        <span class="mode-icon">🎲</span>
+        <span class="mode-title">Mini Quiz</span>
+        <span class="mode-desc">20 random questions</span>
+      </button>
+      <button class="mode-card" onclick="startQuiz('full')">
+        <span class="mode-icon">📋</span>
+        <span class="mode-title">Full Quiz</span>
+        <span class="mode-desc">All 100 questions in order</span>
+      </button>
+      <button class="mode-card" onclick="startQuiz('random')">
+        <span class="mode-icon">🔀</span>
+        <span class="mode-title">Full Randomised</span>
+        <span class="mode-desc">All 100 questions shuffled</span>
+      </button>
+    </div>
+    <p style="font-size:.8rem;color:var(--muted);margin-top:1rem;">6 chef ranks · answer or flag each question to progress</p>
+  </div>
+</div>
+
+<!-- ══════════════ QUIZ ══════════════ -->
+<div id="quiz" class="screen">
+  <div class="quiz-header">
+    <span class="user-info" id="headerName"></span>
+    <span id="qProgress" style="color:var(--muted);font-size:.9rem;"></span>
+    <div style="position:relative;margin-left:auto;">
+      <button class="flagged-btn" id="flaggedBtn" onclick="toggleFlaggedPanel(event)">🚩 <span id="flaggedCount">0 flagged</span></button>
+      <div class="flagged-panel" id="flaggedPanel">
+        <div class="flagged-panel-header">Flagged Questions</div>
+        <div id="flaggedPanelList"></div>
+      </div>
+    </div>
+    <div class="timer-wrap" id="timerDisplay">⏱ 00:00</div>
+  </div>
+  <div class="progress-bar-outer"><div class="progress-bar-inner" id="progressBar" style="width:0%"></div></div>
+  <div class="quiz-body">
+    <div class="question-area">
+      <div class="question-card">
+        <div class="flag-review-bar" id="flagReviewBar">
+          <span class="frb-label" id="flagReviewLabel">Reviewing flagged: 1 of 1</span>
+          <button class="frb-back" onclick="exitFlagReview()">✕ Exit Review</button>
+        </div>
+        <div class="question-meta">
+          <span class="q-counter" id="qCounter">Question 1 of 88</span>
+          <span class="topic-tag" id="qTopic">Bread</span>
+          <button class="flag-btn" id="flagBtn" onclick="toggleFlag()">🚩 Flag</button>
+        </div>
+        <div class="question-text" id="qText"></div>
+        <div class="options" id="optionsContainer"></div>
+        <div class="skip-warning" id="skipWarning">⚠️ Answer this question or flag it before moving on.</div>
+        <div class="question-nav" id="questionNav">
+          <button class="btn btn-secondary" id="prevBtn" onclick="navigate(-1)">← Previous</button>
+          <button class="btn btn-secondary" id="nextBtn" onclick="navigate(1)">Next →</button>
+        </div>
+      </div>
+      <div class="submit-area" id="normalSubmitArea">
+        <p class="submit-note" id="submitNote"></p>
+        <button class="btn btn-danger" onclick="confirmSubmit()">🏁 Submit Quiz</button>
+      </div>
+      <div class="submit-area" id="reviewSubmitArea" style="display:none">
+        <p class="submit-note">You've reviewed your flagged questions. Ready to submit?</p>
+        <div style="display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;margin-top:.5rem;">
+          <button class="btn btn-secondary" onclick="exitFlagReview()">← Back to Quiz</button>
+          <button class="btn btn-danger" onclick="submitQuiz(false)">✓ Confirm &amp; Submit</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ RESULTS ══════════════ -->
+<div id="results" class="screen">
+  <div class="results-header">
+    <h1 id="resultsTitle">Results</h1>
+    <div class="score-circle">
+      <span class="score-pct" id="scorePct">0%</span>
+      <span class="score-label" id="scoreRaw">0 / 0</span>
+    </div>
+  </div>
+
+  <div class="rank-card" id="rankCard">
+    <div class="rank-emoji" id="rankEmoji"></div>
+    <div class="rank-name" id="rankName"></div>
+    <div class="rank-desc" id="rankDesc"></div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-box correct"><div class="stat-num" id="statCorrect">0</div><div class="stat-lbl">Correct ✓</div></div>
+    <div class="stat-box wrong"><div class="stat-num" id="statWrong">0</div><div class="stat-lbl">Incorrect ✗</div></div>
+    <div class="stat-box"><div class="stat-num" id="statTime" style="color:var(--gold-light)">–</div><div class="stat-lbl">Time Taken</div></div>
+  </div>
+
+  <div class="topic-breakdown" id="topicBreakdown"></div>
+
+  <div class="review-section">
+    <h2>📖 Answer Review</h2>
+    <div class="review-filters">
+      <button class="filter-btn active" onclick="filterReview('all',this)">All</button>
+      <button class="filter-btn" onclick="filterReview('correct',this)">✓ Correct</button>
+      <button class="filter-btn" onclick="filterReview('wrong',this)">✗ Incorrect</button>
+    </div>
+    <div id="reviewList"></div>
+  </div>
+
+  <button class="btn btn-primary" style="max-width:300px;margin-bottom:3rem;" onclick="restartQuiz()">🔄 Try Again</button>
+</div>
+
+<script>
+// ════════════════════════════════════════════
+// QUESTION BANK
+// ════════════════════════════════════════════
+const QUESTIONS = [
+  // ── BREAD (Pages 3–4) ──
+  {
+    topic: "Bread",
+    ref: "Page 3 — Bread: Strong Flour",
+    text: "What is the protein content of strong flour, making it suitable for bread making?",
+    options: ["5–8%", "10–14%", "15–20%", "8–10%"],
+    answer: 1
+  },
+  {
+    topic: "Bread",
+    ref: "Page 3 — Bread: Gluten",
+    text: "What is gluten?",
+    options: [
+      "A type of yeast used to leaven bread",
+      "The combination of two proteins found in wheat, rye and barley that provides elasticity",
+      "A chemical raising agent found in flour",
+      "A type of starch that gelatinises during baking"
+    ],
+    answer: 1
+  },
+  {
+    topic: "Bread",
+    ref: "Page 3 — Bread: Yeast",
+    text: "What is the ONLY thing that kills yeast?",
+    options: ["Salt", "Cold temperatures", "Excess heat", "Vinegar"],
+    answer: 2
+  },
+  {
+    topic: "Bread",
+    ref: "Page 3 — Bread: Yeast equivalents",
+    text: "5g of fast action yeast is equivalent to how much fresh yeast?",
+    options: ["10g", "15g", "20g", "25g"],
+    answer: 2
+  },
+  {
+    topic: "Bread",
+    ref: "Page 3–4 — Bread: Salt",
+    text: "Which of the following is NOT a function of salt in bread making?",
+    options: [
+      "Contributing to flavour",
+      "Killing the yeast completely",
+      "Controlling yeast fermentation",
+      "Strengthening gluten"
+    ],
+    answer: 1
+  },
+  {
+    topic: "Bread",
+    ref: "Page 4 — Bread: Stages of bread making",
+    text: "What is the purpose of the 'knocking back' stage in bread making?",
+    options: [
+      "To strengthen gluten strands further",
+      "To redistribute large, uneven CO₂ pockets",
+      "To add additional flavour to the dough",
+      "To prove the bread for the first time"
+    ],
+    answer: 1
+  },
+  {
+    topic: "Bread",
+    ref: "Page 4 — Bread: Bench rest",
+    text: "What does the 'bench rest' stage achieve?",
+    options: [
+      "Yeast activation",
+      "Gluten relaxation before shaping",
+      "Crust formation",
+      "CO₂ production"
+    ],
+    answer: 1
+  },
+  {
+    topic: "Bread",
+    ref: "Page 4 — Bread: Proving",
+    text: "How can you tell that bread is sufficiently proved?",
+    options: [
+      "It has exactly doubled in size",
+      "A light press into the dough does not spring back",
+      "The crust has turned golden",
+      "It sounds hollow when tapped on the base"
+    ],
+    answer: 1
+  },
+  {
+    topic: "Bread",
+    ref: "Page 4 — Bread: What has gone wrong?",
+    text: "What is the most likely cause of a dense loaf of bread?",
+    options: [
+      "Too little salt was added",
+      "The dough was over-proved",
+      "Too much liquid was used",
+      "The dough was too dry or proved for too short a time"
+    ],
+    answer: 3
+  },
+  {
+    topic: "Bread",
+    ref: "Page 4 — Bread: What has gone wrong?",
+    text: "What causes a wrinkled crust on bread?",
+    options: [
+      "The dough was too wet",
+      "The oven was too hot",
+      "The dough was over-proved and collapsed",
+      "Too much salt was added"
+    ],
+    answer: 2
+  },
+
+  // ── CAKES (Pages 6–7) ──
+  {
+    topic: "Cakes",
+    ref: "Page 6 — Cakes: Four main techniques",
+    text: "What are the four main techniques of cake making?",
+    options: [
+      "Mixing, whisking, folding, baking",
+      "Creaming, whisking, melting, rubbing in",
+      "Kneading, proving, shaping, baking",
+      "Beating, folding, melting, resting"
+    ],
+    answer: 1
+  },
+  {
+    topic: "Cakes",
+    ref: "Page 6 — Cakes: Baking powder",
+    text: "What is baking powder?",
+    options: [
+      "A single acting chemical raising agent",
+      "A double acting chemical raising agent (activated by liquid then heat)",
+      "A mixture of flour and salt",
+      "Pure bicarbonate of soda"
+    ],
+    answer: 1
+  },
+  {
+    topic: "Cakes",
+    ref: "Page 7 — Cakes: What has gone wrong?",
+    text: "What is the most likely cause of a cake sinking in the middle?",
+    options: [
+      "Too much sugar was added",
+      "The oven door was opened too soon before the flour had fully gelatinised",
+      "Too little flour was used",
+      "The batter was over-beaten"
+    ],
+    answer: 1
+  },
+  {
+    topic: "Cakes",
+    ref: "Page 6 — Cakes: Bicarbonate of soda",
+    text: "What does bicarbonate of soda need to react and create CO₂?",
+    options: [
+      "Heat only",
+      "Liquid and an acid",
+      "Water and an alkali",
+      "Fat and sugar"
+    ],
+    answer: 1
+  },
+  {
+    topic: "Cakes",
+    ref: "Page 6 — Cakes: Shortening",
+    text: "What does shortening achieve in cake making?",
+    options: [
+      "It adds flavour and moisture only",
+      "It coats flour particles with fat, preventing water absorption and limiting gluten development",
+      "It creates air bubbles through mechanical action",
+      "It activates raising agents"
+    ],
+    answer: 1
+  },
+  {
+    topic: "Cakes",
+    ref: "Page 6 — Cakes: Sugar",
+    text: "Why does caster sugar work best in the creaming method?",
+    options: [
+      "It dissolves more quickly than other sugars",
+      "Its crystal structure cuts through fat, introducing pockets of air (aeration)",
+      "It contains less water than other sugars",
+      "It prevents the cake from browning"
+    ],
+    answer: 1
+  },
+  {
+    topic: "Cakes",
+    ref: "Page 7 — Cakes: What makes a cake rise?",
+    text: "Which of these is NOT a reason why a cake rises?",
+    options: [
+      "Steam from water content in ingredients",
+      "Aeration — air incorporated during mixing that expands with heat",
+      "Carbon dioxide from chemical raising agents",
+      "Gluten development during baking"
+    ],
+    answer: 3
+  },
+  {
+    topic: "Cakes",
+    ref: "Page 7 — Cakes: What has gone wrong?",
+    text: "What causes bubbles on the surface of a cake?",
+    options: [
+      "Too much baking powder",
+      "The cake was delayed going into the oven and raising agents started working at room temperature",
+      "Too much liquid in the batter",
+      "The oven was too cold"
+    ],
+    answer: 1
+  },
+
+  // ── CHICKEN (Page 8) ──
+  {
+    topic: "Chicken",
+    ref: "Page 8 — Chicken: Dark vs white meat",
+    text: "Why does dark chicken meat lend itself to both quick and slow cooking methods?",
+    options: [
+      "It has lower fat content than white meat",
+      "It has a higher fat content than white meat",
+      "It is leaner so cooks more evenly",
+      "It contains more protein"
+    ],
+    answer: 1
+  },
+  {
+    topic: "Chicken",
+    ref: "Page 8 — Chicken: Checking if cooked",
+    text: "How do you check if chicken is cooked using a metal skewer?",
+    options: [
+      "Insert for 30 seconds — should feel warm when removed",
+      "Insert into the deepest part of the meat, hold for 10 seconds — should be piping hot to the touch",
+      "The skewer should run clear red when removed",
+      "The skin should feel firm and pale"
+    ],
+    answer: 1
+  },
+  {
+    topic: "Chicken",
+    ref: "Page 8 — Chicken: Rendering",
+    text: "What is rendering in the context of cooking chicken?",
+    options: [
+      "Cooking chicken gently in liquid",
+      "Melting solid meat fat slowly by placing skin-side down in a pan",
+      "Frying chicken at high heat to seal",
+      "Poaching in a court bouillon"
+    ],
+    answer: 1
+  },
+
+  // ── CHOUX (Page 9) ──
+  {
+    topic: "Choux",
+    ref: "Page 9 — Choux: Rising mechanism",
+    text: "What causes choux pastry to rise during baking?",
+    options: [
+      "Chemical raising agents (baking powder)",
+      "Water in the mixture turning to steam, leavening the choux",
+      "Whisked egg whites incorporated into the dough",
+      "Yeast fermentation"
+    ],
+    answer: 1
+  },
+  {
+    topic: "Choux",
+    ref: "Page 9 — Choux: When is it baked?",
+    text: "What are the three indicators that choux pastry is correctly baked?",
+    options: [
+      "Doubled in size, soft to touch, pale white",
+      "Tripled in size, firm and light like a ping pong ball, golden brown all over",
+      "Risen, soft and creamy inside, light coloured",
+      "Flat, crisp and dark brown"
+    ],
+    answer: 1
+  },
+  {
+    topic: "Choux",
+    ref: "Page 9 — Choux: Egg proteins",
+    text: "What process sets the shape of choux pastry once it has risen?",
+    options: [
+      "Starch crystallisation",
+      "Gluten network formation",
+      "Egg protein coagulation",
+      "Caramelisation of sugars"
+    ],
+    answer: 2
+  },
+  {
+    topic: "Choux",
+    ref: "Page 9 — Choux: What has gone wrong?",
+    text: "Why might choux pastry fail to rise?",
+    options: [
+      "Not enough butter in the recipe",
+      "Too much or too little egg, OR the oven door was opened before eggs had coagulated",
+      "Too much flour in the panade",
+      "The oven was too hot"
+    ],
+    answer: 1
+  },
+
+  // ── EGGS (Page 10) ──
+  {
+    topic: "Eggs",
+    ref: "Page 10 — Eggs: Coagulation temperatures",
+    text: "At what temperature do egg whites coagulate?",
+    options: ["70°C", "65°C", "60°C", "55°C"],
+    answer: 2
+  },
+  {
+    topic: "Eggs",
+    ref: "Page 10 — Eggs: Mayonnaise",
+    text: "How would you correctly describe mayonnaise?",
+    options: [
+      "An unstable emulsion sauce",
+      "A stable emulsion sauce",
+      "A composite sauce with no emulsifier",
+      "A mother sauce made from oil and water"
+    ],
+    answer: 1
+  },
+  {
+    topic: "Eggs",
+    ref: "Page 10 — Eggs: Lecithin",
+    text: "What is the natural emulsifier found in egg yolks that helps make mayonnaise?",
+    options: ["Mustard", "Vinegar", "Lecithin", "Albumin"],
+    answer: 2
+  },
+  {
+    topic: "Eggs",
+    ref: "Page 10 — Eggs: Daughter sauces",
+    text: "Which are two daughter sauces of mayonnaise?",
+    options: [
+      "Béarnaise and hollandaise",
+      "Aioli and tartare",
+      "Pesto and salsa verde",
+      "Mornay and béchamel"
+    ],
+    answer: 1
+  },
+  {
+    topic: "Eggs",
+    ref: "Page 10 — Eggs: Freshness test",
+    text: "How can you tell if an egg is fresh?",
+    options: [
+      "It floats in water",
+      "It sinks in water",
+      "The yolk is very pale yellow",
+      "The shell feels lighter"
+    ],
+    answer: 1
+  },
+  {
+    topic: "Eggs",
+    ref: "Page 10 — Eggs: Crème anglaise",
+    text: "What should crème anglaise (custard) look like when it reaches the correct consistency?",
+    options: [
+      "Thick enough to hold a spoon upright",
+      "It should coat the back of a metal spoon in an even covering",
+      "It should be completely set and firm",
+      "It should be pourable with no coating ability"
+    ],
+    answer: 1
+  },
+
+  // ── EGG WHITES (Pages 11–12) ──
+  {
+    topic: "Egg whites",
+    ref: "Page 11 — Egg whites: Meringue baking",
+    text: "Why are meringues baked at a low temperature?",
+    options: [
+      "To cook them more quickly and efficiently",
+      "To minimise caramelisation of sugars and avoid expansion of incorporated air",
+      "To prevent them from rising too high",
+      "To develop a chewy, soft texture throughout"
+    ],
+    answer: 1
+  },
+  {
+    topic: "Egg whites",
+    ref: "Page 11 — Egg whites: Over whisking",
+    text: "What happens when egg whites are over-whisked?",
+    options: [
+      "They become too sweet and dense",
+      "Proteins bond so tightly that they squeeze moisture out of the bubbles, causing weeping",
+      "They collapse immediately and cannot be rescued",
+      "They turn yellow and begin to smell"
+    ],
+    answer: 1
+  },
+  {
+    topic: "Egg whites",
+    ref: "Page 11 — Egg whites: Fresh vs old",
+    text: "Which egg whites produce the most stable meringue?",
+    options: [
+      "Old egg whites — they are looser and whip to more volume",
+      "Fresh egg whites — they take longer to whip but hold much better",
+      "It makes no practical difference",
+      "Pasteurised egg whites only"
+    ],
+    answer: 1
+  },
+  {
+    topic: "Egg whites",
+    ref: "Page 12 — Egg whites: Storage",
+    text: "How should baked meringues be stored to keep them crisp?",
+    options: [
+      "In the fridge in an open container",
+      "In the freezer wrapped in foil",
+      "Airtight at room temperature",
+      "Wrapped in a damp cloth to prevent cracking"
+    ],
+    answer: 2
+  },
+  {
+    topic: "Egg whites",
+    ref: "Page 12 — Egg whites: What has gone wrong?",
+    text: "Why might meringue weep sugar (liquid) in the oven?",
+    options: [
+      "The oven temperature was too cool",
+      "Oven too hot, egg whites over-whisked, or sugar not fully dissolved",
+      "Too much cream of tartar was added",
+      "The meringue was left to rest too long before baking"
+    ],
+    answer: 1
+  },
+
+  // ── FISH (Page 13) ──
+  {
+    topic: "Fish",
+    ref: "Page 13 — Fish: Categorisation",
+    text: "Which of these is classified as a flat fish?",
+    options: ["Salmon", "Mackerel", "Cod", "Plaice"],
+    answer: 3
+  },
+  {
+    topic: "Fish",
+    ref: "Page 13 — Fish: Buying fish",
+    text: "What should fresh fish smell like?",
+    options: ["Fishy and strong", "The sea", "Odourless", "Slightly sweet"],
+    answer: 1
+  },
+  {
+    topic: "Fish",
+    ref: "Page 13 — Fish: Storage",
+    text: "At what temperature should fish be stored in the fridge?",
+    options: ["5–8°C", "Below 0°C", "1–4°C", "4–7°C"],
+    answer: 2
+  },
+  {
+    topic: "Fish",
+    ref: "Page 13 — Fish: How to tell it's cooked",
+    text: "Which of the following indicates fish is cooked?",
+    options: [
+      "The flesh has turned from opaque to translucent",
+      "The flesh has turned from translucent to opaque and is starting to flake",
+      "The skin has become rubbery",
+      "The fish has shrunk to half its original size"
+    ],
+    answer: 1
+  },
+  {
+    topic: "Fish",
+    ref: "Page 13 — Fish: Categorisation",
+    text: "Round fish can be either oily or white. What can you say about flat fish?",
+    options: [
+      "They can be oily or white like round fish",
+      "They are always oily",
+      "They are always white fleshed",
+      "They are always smoked"
+    ],
+    answer: 2
+  },
+
+  // ── GELATINE (Page 14) ──
+  {
+    topic: "Gelatine",
+    ref: "Page 14 — Gelatine: Setting temperature",
+    text: "At what temperature does gelatine set?",
+    options: ["10°C", "15°C", "20°C", "27°C"],
+    answer: 2
+  },
+  {
+    topic: "Gelatine",
+    ref: "Page 14 — Gelatine: Protease enzyme",
+    text: "Which fruits contain a protease enzyme that can break down gelatine and prevent setting?",
+    options: [
+      "Strawberry, raspberry and blueberry",
+      "Kiwi, pineapple and papaya",
+      "Apple, pear and mango",
+      "Orange, lemon and lime"
+    ],
+    answer: 1
+  },
+  {
+    topic: "Gelatine",
+    ref: "Page 14 — Gelatine: Thermally reversible",
+    text: "What does it mean that gelatine is 'thermally reversible'?",
+    options: [
+      "It dissolves in cold water",
+      "It can be gently reheated and reset multiple times",
+      "It sets permanently at room temperature",
+      "It is derived from plant sources"
+    ],
+    answer: 1
+  },
+  {
+    topic: "Gelatine",
+    ref: "Page 14 — Gelatine: What has gone wrong?",
+    text: "Why might a gelatine dessert be rubbery in texture?",
+    options: [
+      "Not enough gelatine was used",
+      "The gelatine was boiled",
+      "Too much gelatine was used for the liquid quantity",
+      "The dessert was not chilled long enough"
+    ],
+    answer: 2
+  },
+
+  // ── NUTRITION (Page 15) ──
+  {
+    topic: "Nutrition",
+    ref: "Page 15 — Nutrition: Complete proteins",
+    text: "Which of these is a non-meat complete protein (containing all 9 essential amino acids)?",
+    options: ["Beans", "Lentils", "Quinoa", "Almonds"],
+    answer: 2
+  },
+  {
+    topic: "Nutrition",
+    ref: "Page 15 — Nutrition: Saturated fats",
+    text: "Which of these are saturated fats (solid at room temperature)?",
+    options: [
+      "Olive oil and avocado oil",
+      "Nuts and seeds",
+      "Butter, dairy products and coconut oil",
+      "Sunflower oil and rapeseed oil"
+    ],
+    answer: 2
+  },
+  {
+    topic: "Nutrition",
+    ref: "Page 15 — Nutrition: Fibre",
+    text: "What does soluble fibre do in the gut?",
+    options: [
+      "Provides roughage and speeds digestion",
+      "Absorbs water, forms a gel, slows digestion and helps regulate blood sugar",
+      "Increases the absorption of fat-soluble vitamins",
+      "Destroys harmful bacteria"
+    ],
+    answer: 1
+  },
+
+  // ── PASTA (Page 16) ──
+  {
+    topic: "Pasta",
+    ref: "Page 16 — Pasta: Flour",
+    text: "What flour is typically used for making fresh pasta, and why?",
+    options: [
+      "Wholemeal flour — for its high fibre content",
+      "Self-raising flour — for a lighter texture",
+      "'00' flour from durum wheat — high protein, finely milled for silky smooth texture",
+      "Strong bread flour — for maximum gluten development"
+    ],
+    answer: 2
+  },
+  {
+    topic: "Pasta",
+    ref: "Page 16 — Pasta: Salt",
+    text: "Why is pasta seasoned through the cooking water rather than the dough?",
+    options: [
+      "It is more efficient",
+      "The dough cannot absorb salt properly",
+      "Adding salt directly to the dough can produce a speckled appearance",
+      "It is purely tradition with no technical reason"
+    ],
+    answer: 2
+  },
+  {
+    topic: "Pasta",
+    ref: "Page 16 — Pasta: Sauce pairing",
+    text: "Which pasta shape suits chunkier, textured sauces best?",
+    options: [
+      "Long flat pasta like tagliatelle",
+      "Pasta with tubes, grooves or hollows like penne",
+      "Very fine pasta like angel hair",
+      "Sheet pasta like lasagne sheets"
+    ],
+    answer: 1
+  },
+
+  // ── PRESERVING (Page 17) ──
+  {
+    topic: "Preserving",
+    ref: "Page 17 — Preserving: Why jams keep",
+    text: "Why do jams and preserves have a long shelf life?",
+    options: [
+      "The high acidity from vinegar prevents bacterial growth",
+      "Sugar is hygroscopic and binds with water, making it unavailable to bacteria",
+      "High alcohol content from fermentation kills bacteria",
+      "The low cooking temperature preserves them"
+    ],
+    answer: 1
+  },
+  {
+    topic: "Preserving",
+    ref: "Page 17 — Preserving: Pectin",
+    text: "What is pectin?",
+    options: [
+      "A type of sugar used in jam making",
+      "A synthetic preservative added to jams",
+      "A water-soluble gelatinous polysaccharide found in fruit pulp, skin and cores",
+      "A bacteria inhibitor produced during fermentation"
+    ],
+    answer: 2
+  },
+  {
+    topic: "Preserving",
+    ref: "Page 17 — Preserving: Jam vs preserving sugar",
+    text: "What is the difference between jam sugar and preserving sugar?",
+    options: [
+      "Jam sugar has no additives; preserving sugar contains added pectin",
+      "Jam sugar has added pectin; preserving sugar has large grains but no pectin",
+      "They are identical products with different branding",
+      "Preserving sugar dissolves more quickly"
+    ],
+    answer: 1
+  },
+
+  // ── ROASTING (Page 18) ──
+  {
+    topic: "Roasting",
+    ref: "Page 18 — Roasting: Method",
+    text: "At what minimum temperature does roasting cook food?",
+    options: ["100°C", "120°C", "150°C", "200°C"],
+    answer: 2
+  },
+  {
+    topic: "Roasting",
+    ref: "Page 18 — Roasting: Traditional accompaniments",
+    text: "What are the traditional accompaniments for roast beef?",
+    options: [
+      "Mint sauce and redcurrant gravy",
+      "Apple sauce and crackling",
+      "Yorkshire puddings and horseradish cream",
+      "Bread sauce and stuffing"
+    ],
+    answer: 2
+  },
+  {
+    topic: "Roasting",
+    ref: "Page 18 — Roasting: Best cuts",
+    text: "Which of these cuts of beef is most suitable for roasting?",
+    options: ["Shin", "Brisket", "Silverside", "Sirloin"],
+    answer: 3
+  },
+  {
+    topic: "Roasting",
+    ref: "Page 18 — Roasting: Maillard reaction",
+    text: "What is the Maillard reaction?",
+    options: [
+      "When sugar caramelises at high temperatures",
+      "A chemical reaction between amino acids and sugars, producing colour and flavour at over 140°C",
+      "When gluten forms a network during kneading",
+      "When yeast ferments sugars to produce CO₂"
+    ],
+    answer: 1
+  },
+
+  // ── SAUCES (Pages 19–20) ──
+  {
+    topic: "Sauces",
+    ref: "Page 19 — Sauces: White sauce / daughter sauces",
+    text: "Which of the following is a daughter sauce of white sauce?",
+    options: ["Aioli", "Hollandaise", "Mornay", "Béarnaise"],
+    answer: 2
+  },
+  {
+    topic: "Sauces",
+    ref: "Page 19 — Sauces: Batter resting",
+    text: "Why should batter rest for at least 30 minutes before using?",
+    options: [
+      "To allow yeast to activate and create bubbles",
+      "To allow starch cells to swell as they absorb liquid, producing a lighter batter",
+      "To develop gluten for more structure",
+      "To allow the eggs to set slightly"
+    ],
+    answer: 1
+  },
+  {
+    topic: "Sauces",
+    ref: "Page 20 — Sauces: Beurre noisette",
+    text: "What gives beurre noisette its characteristic brown colour?",
+    options: [
+      "Protein denaturation from the butter's water content",
+      "Maillard reaction between butter's water and proteins",
+      "Caramelisation of the milk solids in butter",
+      "Starch gelatinisation"
+    ],
+    answer: 2
+  },
+  {
+    topic: "Sauces",
+    ref: "Page 19 — Sauces: Pesto",
+    text: "Pesto is traditionally made from which ingredients?",
+    options: [
+      "Parsley, walnuts, pecorino, olive oil and garlic",
+      "Basil, pine nuts, parmesan, olive oil and garlic",
+      "Rocket, cashews, mozzarella, olive oil and garlic",
+      "Spinach, almonds, parmesan, olive oil and garlic"
+    ],
+    answer: 1
+  },
+
+  // ── SHELLFISH (Page 21) ──
+  {
+    topic: "Shellfish",
+    ref: "Page 21 — Shellfish: Classification",
+    text: "Crabs, lobsters, langoustines and prawns are all classified as what type of shellfish?",
+    options: ["Molluscs", "Cephalopods", "Gastropods", "Crustaceans"],
+    answer: 3
+  },
+  {
+    topic: "Shellfish",
+    ref: "Page 21 — Shellfish: Classification",
+    text: "Which of these is a bivalve mollusc?",
+    options: ["Squid", "Whelk", "Mussel", "Crayfish"],
+    answer: 2
+  },
+  {
+    topic: "Shellfish",
+    ref: "Page 21 — Shellfish: Storage",
+    text: "How long should fresh live shellfish be cooked within after purchase?",
+    options: ["12 hours", "24 hours", "48 hours", "72 hours"],
+    answer: 1
+  },
+  {
+    topic: "Shellfish",
+    ref: "Page 21 — Shellfish: Frozen storage",
+    text: "How long can frozen shellfish be kept?",
+    options: ["1 month", "3 months", "6 months", "12 months"],
+    answer: 2
+  },
+
+  // ── SHORTCRUST PASTRY (Pages 22–23) ──
+  {
+    topic: "Shortcrust",
+    ref: "Page 22 — Shortcrust: Shortening / chilled fat",
+    text: "Why must butter be chilled when making shortcrust pastry?",
+    options: [
+      "To improve the flavour of the pastry",
+      "To prevent it from melting during the rubbing-in process",
+      "To ensure the correct golden colour when baked",
+      "To slow gluten development"
+    ],
+    answer: 1
+  },
+  {
+    topic: "Shortcrust",
+    ref: "Page 22–23 — Shortcrust: Liquid addition",
+    text: "What happens if too much liquid is added to shortcrust pastry?",
+    options: [
+      "The pastry becomes crumbly and dry",
+      "The pastry becomes tougher in texture and may shrink",
+      "The pastry won't rise properly",
+      "The pastry turns grey in colour"
+    ],
+    answer: 1
+  },
+  {
+    topic: "Shortcrust",
+    ref: "Page 22 — Shortcrust: Blind baking",
+    text: "What is blind baking?",
+    options: [
+      "Baking without following a recipe",
+      "The process of completely cooking pastry before adding the filling, using a cartouche and baking beans",
+      "Baking pastry at very low temperatures",
+      "Baking without a tin"
+    ],
+    answer: 1
+  },
+  {
+    topic: "Shortcrust",
+    ref: "Page 23 — Shortcrust: What has gone wrong?",
+    text: "What might cause pastry to shrink during baking?",
+    options: [
+      "Too little liquid added",
+      "The pastry was not chilled before baking, too much liquid was added, or it was stretched when lined",
+      "The pastry was too thick",
+      "Too little fat was used"
+    ],
+    answer: 1
+  },
+
+  // ── SLOW COOKING (Page 24) ──
+  {
+    topic: "Slow cooking",
+    ref: "Page 24 — Slow cooking: Connective tissue",
+    text: "Why does slow cooking tenderise tough cuts of meat?",
+    options: [
+      "It denatures surface proteins to form a crust",
+      "It evaporates moisture making the meat lighter",
+      "It breaks down connective tissue into gelatine over long periods",
+      "It reduces the fat content of the meat"
+    ],
+    answer: 2
+  },
+  {
+    topic: "Slow cooking",
+    ref: "Page 24 — Slow cooking: Cuts",
+    text: "Which of these beef cuts requires long slow cooking?",
+    options: ["Sirloin", "Fillet", "Fore rib", "Brisket"],
+    answer: 3
+  },
+  {
+    topic: "Slow cooking",
+    ref: "Page 24 — Slow cooking: Tenderising methods",
+    text: "Which of these is NOT listed as a method of tenderising meat (apart from slow cooking)?",
+    options: ["Hanging", "Freezing", "Marinating", "Mincing"],
+    answer: 2
+  },
+
+  // ── STOCKS (Page 25) ──
+  {
+    topic: "Stocks",
+    ref: "Page 25 — Stocks: Cooking times",
+    text: "How long should fish stock be cooked?",
+    options: ["2–4 hours", "1 hour", "30 minutes", "20–30 minutes"],
+    answer: 3
+  },
+  {
+    topic: "Stocks",
+    ref: "Page 25 — Stocks: Cooking times",
+    text: "How long should brown chicken and veal stock be cooked?",
+    options: ["20–30 minutes", "2–4 hours", "4–6 hours", "8–10 hours"],
+    answer: 2
+  },
+  {
+    topic: "Stocks",
+    ref: "Page 25 — Stocks: Depouiller",
+    text: "What is 'depouiller' in stock making?",
+    options: [
+      "Straining the finished stock through a j-cloth and chinois",
+      "Adding cold water or ice during cooking to help fat and impurities rise to the surface to be skimmed",
+      "Reducing the stock to concentrate its flavour",
+      "Adding aromatic vegetables and herbs to the stock"
+    ],
+    answer: 1
+  },
+  {
+    topic: "Stocks",
+    ref: "Page 25 — Stocks: Clarity",
+    text: "What causes a cloudy stock?",
+    options: [
+      "Adding too many vegetables",
+      "Boiling the stock during cooking or pressing ingredients through a sieve",
+      "Adding salt during cooking",
+      "Not cooking for long enough"
+    ],
+    answer: 1
+  },
+  {
+    topic: "Stocks",
+    ref: "Page 25 — Stocks: Rules",
+    text: "Which of these is a rule of stock making?",
+    options: [
+      "Always season your stock with salt during cooking",
+      "Always start with hot water to extract flavour quickly",
+      "Always use cold water to cover ingredients at the start",
+      "Press the ingredients through the sieve for maximum flavour"
+    ],
+    answer: 2
+  },
+
+  // ── SUGAR (Page 26) ──
+  {
+    topic: "Sugar",
+    ref: "Page 26 — Sugar: Crystallisation",
+    text: "What is crystallisation in sugar work?",
+    options: [
+      "Sugar caramelising and changing colour with heat",
+      "The sugar syrup becoming more concentrated as water evaporates",
+      "Sugar changing from a clear liquid into a cloudy, grainy mass",
+      "Sugar dissolving in water to form a syrup"
+    ],
+    answer: 2
+  },
+  {
+    topic: "Sugar",
+    ref: "Page 26 — Sugar: Wet vs dry caramel",
+    text: "What is the difference between a 'wet' and 'dry' caramel?",
+    options: [
+      "They are identical — just different names",
+      "A wet caramel starts as a sugar syrup (sugar + water); a dry caramel uses only sugar and heat",
+      "A dry caramel uses water; a wet caramel does not",
+      "A wet caramel uses more sugar"
+    ],
+    answer: 1
+  },
+  {
+    topic: "Sugar",
+    ref: "Page 26 — Sugar: Stopping caramel",
+    text: "Why must you act quickly once caramel reaches the desired colour?",
+    options: [
+      "It will crystallise if left too long",
+      "Caramelisation is irreversible — the temperature will keep rising and the caramel will burn",
+      "The sugar will revert to granular form",
+      "The colour will fade"
+    ],
+    answer: 1
+  },
+
+  // ── TENDER CUTS (Page 27) ──
+  {
+    topic: "Tender cuts",
+    ref: "Page 27 — Tender cuts: Resting meat",
+    text: "Why is meat rested after cooking?",
+    options: [
+      "To cool it down to a safe serving temperature",
+      "To allow muscle fibres to relax and juices to redistribute evenly through the meat",
+      "To allow the fat to set and the flavour to develop further",
+      "To allow the Maillard reaction to continue"
+    ],
+    answer: 1
+  },
+  {
+    topic: "Tender cuts",
+    ref: "Page 27 — Tender cuts: Hanging time",
+    text: "What is the maximum recommended hanging time for meat to balance flavour and cost?",
+    options: ["7 days", "14 days", "Up to 28 days", "60 days"],
+    answer: 2
+  },
+  {
+    topic: "Tender cuts",
+    ref: "Page 27 — Tender cuts: Cooking methods",
+    text: "Which cooking methods are appropriate for tender cuts of meat?",
+    options: [
+      "Long slow cooking and braising",
+      "Stewing and casseroling",
+      "Grilling, frying and roasting (quick methods)",
+      "Steaming and poaching"
+    ],
+    answer: 2
+  },
+  {
+    topic: "Tender cuts",
+    ref: "Page 27 — Tender cuts: Buying beef",
+    text: "What does marbling in beef indicate?",
+    options: [
+      "The beef has been poorly stored",
+      "The beef is too old",
+      "A good sign — small streaks of fat keep the meat moist during cooking",
+      "The beef is from an old animal"
+    ],
+    answer: 2
+  },
+
+  // ── VEGETABLES (Page 28) ──
+  {
+    topic: "Vegetables",
+    ref: "Page 28 — Vegetables: Starting water temperature",
+    text: "How should vegetables that grow BELOW the ground be started when boiling?",
+    options: [
+      "Placed directly into rapidly boiling salted water",
+      "Placed in cold water and brought to the boil",
+      "Started in hot steam",
+      "Placed in warm water then brought to boil"
+    ],
+    answer: 1
+  },
+  {
+    topic: "Vegetables",
+    ref: "Page 28 — Vegetables: Blanch and refresh",
+    text: "What is the purpose of blanching and refreshing vegetables?",
+    options: [
+      "To add seasoning to the vegetables",
+      "To reduce the final cooking time and/or stop cooking and set the colour",
+      "To increase their nutritional value",
+      "To soften them completely for pureeing"
+    ],
+    answer: 1
+  },
+  {
+    topic: "Vegetables",
+    ref: "Page 28 — Vegetables: Potatoes",
+    text: "Which method is used for new potatoes, rather than starting in cold water?",
+    options: [
+      "Roasting from cold",
+      "Steaming only",
+      "Started in boiling water (to avoid overcooking)",
+      "Microwaving"
+    ],
+    answer: 2
+  },
+
+  // ── BUFFETS (Page 5) ──
+  {
+    topic: "Buffets",
+    ref: "Page 5 — Buffets: Hot holding temperature",
+    text: "What is the minimum temperature hot food must be kept at during buffet service?",
+    options: ["55°C", "60°C", "65°C", "70°C"],
+    answer: 2
+  },
+  {
+    topic: "Buffets",
+    ref: "Page 5 — Buffets: Cold holding temperature",
+    text: "What is the maximum temperature cold food must be kept below during buffet service?",
+    options: ["4°C", "8°C", "10°C", "12°C"],
+    answer: 1
+  },
+  // ── DEFINITIONS (Pages 32–34) ──
+  {
+    topic: "Definitions",
+    ref: "Page 33 — Definitions: Gelatinisation",
+    text: "What is starch gelatinisation?",
+    options: [
+      "The process of gelatine setting as a mixture cools",
+      "When starch granules swell and absorb water during heating, thickening a sauce",
+      "When sugar crystallises in a syrup",
+      "The coagulation of egg proteins under heat"
+    ],
+    answer: 1
+  },
+  {
+    topic: "Definitions",
+    ref: "Page 33 — Definitions: Roux vs beurre manié",
+    text: "What is the key difference between a roux and a beurre manié?",
+    options: [
+      "A roux uses more fat than flour; beurre manié uses equal quantities",
+      "A roux is cooked fat and flour used to thicken a known quantity of liquid; beurre manié is raw equal quantities of fat and flour used for an unknown quantity",
+      "They are identical in preparation and use",
+      "A beurre manié is made with oil; a roux is always made with butter"
+    ],
+    answer: 1
+  },
+  {
+    topic: "Definitions",
+    ref: "Page 32 — Definitions: Mise en place",
+    text: "What does 'mise en place' mean?",
+    options: [
+      "To taste and season a dish before serving",
+      "To rest meat after cooking so juices redistribute",
+      "The organisation of equipment and ingredients prior to preparation and cooking",
+      "To reduce a sauce to its desired consistency"
+    ],
+    answer: 2
+  },
+  {
+    topic: "Definitions",
+    ref: "Page 32 — Definitions: Cartouche",
+    text: "What is a cartouche and what is it used for?",
+    options: [
+      "A metal skewer used to test whether meat is cooked",
+      "A disc of parchment paper placed on the surface of sweating vegetables or used dry when blind baking",
+      "A muslin bag used to hold bouquet garni",
+      "A fine-mesh sieve used to strain stocks"
+    ],
+    answer: 1
+  },
+  {
+    topic: "Definitions",
+    ref: "Page 33 — Definitions: Emulsification",
+    text: "Which best describes emulsification?",
+    options: [
+      "The process of heating fat until it browns and develops a nutty flavour",
+      "The process of mixing two liquids that do not normally mix, such as oil and egg yolk, to form an emulsion",
+      "The reduction of a liquid by boiling to concentrate its flavour",
+      "Thickening a sauce through starch gelatinisation"
+    ],
+    answer: 1
+  },
+
+  // ── ADDITIONAL ──
+  {
+    topic: "Stocks",
+    ref: "Page 25 — Stocks: Veal bones",
+    text: "Why are veal bones added to a stock?",
+    options: [
+      "They add a rich dark colour to the stock",
+      "They are cheaper than other bones",
+      "They are full of collagen which gives the stock a gelatinous quality",
+      "They prevent the stock from going cloudy"
+    ],
+    answer: 2
+  },
+  {
+    topic: "Pasta",
+    ref: "Page 16 — Pasta: Resting dough",
+    text: "Why should pasta dough be rested before rolling?",
+    options: [
+      "To allow yeast to activate and create bubbles",
+      "To allow the gluten to relax, making the dough easier to roll",
+      "To allow the eggs to partially set",
+      "To allow the dough to double in size"
+    ],
+    answer: 1
+  },
+  {
+    topic: "Preserving",
+    ref: "Page 17 — Preserving: Chutneys",
+    text: "Why do chutneys have a long shelf life?",
+    options: [
+      "High sugar content alone preserves them",
+      "Vinegar's acidity prevents the growth of bacteria, moulds and yeasts",
+      "They must always be refrigerated to last",
+      "They contain added synthetic preservatives"
+    ],
+    answer: 1
+  },
+  {
+    topic: "Cakes",
+    ref: "Page 6 — Cakes: Oils vs butter",
+    text: "Why do oils produce a tender, moist crumb without needing to be beaten or melted first?",
+    options: [
+      "They contain more fat per gram than butter",
+      "Being liquid at room temperature they incorporate easily — though unlike butter they cannot be aerated",
+      "They have a higher water content than butter",
+      "They activate raising agents more efficiently than solid fats"
+    ],
+    answer: 1
+  },
+  {
+    topic: "Chicken",
+    ref: "Page 8 — Chicken: Buying quality",
+    text: "Which of the following indicates a good quality chicken when buying?",
+    options: [
+      "Bright red colour with some blood spots present",
+      "Soft and loose flesh with a mild odour",
+      "Firm and plump, free from damage, blood spots and any odour",
+      "Pale, flabby skin with slight bruising on the breast"
+    ],
+    answer: 2
+  }
+];
+
+// ════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════
+let state = {
+  name: "",
+  quizOrder: [],      // indices into QUESTIONS for this quiz run
+  answers: {},        // keyed by position in quizOrder
+  flagged: {},        // keyed by position in quizOrder
+  current: 0,         // position in quizOrder
+  timer: null,
+  secondsElapsed: 0,
+  submitted: false,
+  flagReviewMode: false,
+  flagQueue: [],
+  flagPos: 0
+};
+
+// ════════════════════════════════════════════
+// CHEF RANKS
+// ════════════════════════════════════════════
+const RANKS = [
+  {
+    min: 0, max: 30,
+    emoji: "🍳💀",
+    name: "Kitchen Catastrophe",
+    desc: `"IT'S RAW! Everything is BLOODY RAW!" — Gordon Ramsay, watching you cook.\n\nYou somehow managed to burn water and undercook ice. The health inspector has filed a restraining order. Your cutting board just called the authorities. Perhaps the bin is where your culinary career should live for now. 🗑️\n\nThe kitchen would like their apron back.`
+  },
+  {
+    min: 31, max: 45,
+    emoji: "🥄😅",
+    name: "Prep Kitchen Apprentice",
+    desc: `You can peel a potato without losing a finger — most of the time. You know that flour exists, and occasionally you even put it in the right thing.\n\nYou're the one everyone sends to wash the lettuce. Three times. Because you missed a slug the first two times.\n\n"Keep practicing," says your chef. (They have their fingers crossed behind their back.) 🤞`
+  },
+  {
+    min: 46, max: 60,
+    emoji: "🍕😐",
+    name: "Line Cook",
+    desc: `You've been on the line long enough to know what mise en place means, but short enough that you still Google 'depouiller'.\n\nYou can follow a recipe — as long as someone has already weighed everything and pre-heated the oven. You're getting there. One day you might even be trusted with the fish station. 🐟\n\nKeep those notes handy!`
+  },
+  {
+    min: 61, max: 75,
+    emoji: "👨‍🍳✨",
+    name: "Sous Chef",
+    desc: `Now we're cooking with gas! You clearly paid attention during the theory sessions and can hold your own in the kitchen.\n\nGordon Ramsay has glanced in your direction with something resembling respect (or it might have been gas). You understand your stocks, your emulsions, and your gluten development.\n\n"Not bad," he mutters. High praise indeed. ⭐`
+  },
+  {
+    min: 76, max: 89,
+    emoji: "⭐👨‍🍳",
+    name: "Head Chef",
+    desc: `Outstanding performance, Chef! The brigade snaps to attention when you walk in. You know your beurre noisette from your beurre manié and your crème anglaise from your crème pâtissière.\n\nGordon Ramsay has called you a 'complete cook' — in front of the entire kitchen. Everyone heard it. You can hear the distant sound of a Michelin inspector pulling into the car park. 🌟🌟`
+  },
+  {
+    min: 90, max: 100,
+    emoji: "⭐⭐⭐🏆",
+    name: "Michelin Star Executive Chef",
+    desc: `EXTRAORDINARY! You absolute kitchen wizard! You have consumed these theory notes for breakfast, lunch, and dinner.\n\nGordon Ramsay has phoned to ask YOU for a recipe. Your scorecard has been framed and mounted on the wall.Julia Child is applauding from the great kitchen in the sky.\n\nYou are, without question, the most dangerous person who has ever wielded a palette knife. The culinary world trembles. 🏆👑🎉`
+  }
+];
+
+function getRank(pct) {
+  return RANKS.find(r => pct >= r.min && pct <= r.max) || RANKS[0];
+}
+
+// ════════════════════════════════════════════
+// TIMER
+// ════════════════════════════════════════════
+function formatTime(s) {
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+}
+
+function startTimer() {
+  const el = document.getElementById('timerDisplay');
+  state.timer = setInterval(() => {
+    state.secondsElapsed++;
+    el.textContent = `⏱ ${formatTime(state.secondsElapsed)}`;
+  }, 1000);
+}
+
+// ════════════════════════════════════════════
+// SHUFFLE HELPER
+// ════════════════════════════════════════════
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// ════════════════════════════════════════════
+// START QUIZ
+// ════════════════════════════════════════════
+function startQuiz(mode) {
+  const nameEl = document.getElementById('playerName');
+  const name = nameEl.value.trim();
+  if (!name) { nameEl.focus(); nameEl.style.borderColor = 'var(--red)'; return; }
+
+  const all = [...Array(QUESTIONS.length).keys()];
+  if (mode === 'mini') {
+    state.quizOrder = shuffle(all).slice(0, 20);
+  } else if (mode === 'random') {
+    state.quizOrder = shuffle(all);
+  } else {
+    state.quizOrder = all;
+  }
+
+  state.name = name;
+  document.getElementById('headerName').textContent = `👨‍🍳 ${name}`;
+  showScreen('quiz');
+  renderQuestion(0);
+  startTimer();
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ════════════════════════════════════════════
+// FLAGGED PANEL
+// ════════════════════════════════════════════
+function toggleFlaggedPanel(e) {
+  e.stopPropagation();
+  const panel = document.getElementById('flaggedPanel');
+  panel.classList.toggle('open');
+  if (panel.classList.contains('open')) rebuildFlaggedPanel();
+}
+
+document.addEventListener('click', () => {
+  document.getElementById('flaggedPanel').classList.remove('open');
+});
+
+function rebuildFlaggedPanel() {
+  const list = document.getElementById('flaggedPanelList');
+  const positions = Object.keys(state.flagged).map(Number).sort((a,b) => a-b);
+  if (positions.length === 0) {
+    list.innerHTML = '<div class="flagged-panel-empty">No flagged questions</div>';
+    return;
+  }
+  list.innerHTML = positions.map(pos => {
+    const q = QUESTIONS[state.quizOrder[pos]];
+    const answered = state.answers[pos] !== undefined ? '✓' : '–';
+    return `<div class="flagged-panel-item" onclick="jumpTo(${pos})">
+      <span><span class="fpi-num">Q${pos+1}</span> <span class="fpi-topic">${q.topic}</span></span>
+      <span style="color:var(--muted);font-size:.8rem;">${answered}</span>
+    </div>`;
+  }).join('');
+}
+
+function jumpTo(pos) {
+  document.getElementById('flaggedPanel').classList.remove('open');
+  renderQuestion(pos);
+}
+
+function updateFlaggedUI() {
+  const count = Object.keys(state.flagged).length;
+  const btn = document.getElementById('flaggedBtn');
+  document.getElementById('flaggedCount').textContent = `${count} flagged`;
+  btn.className = `flagged-btn${count > 0 ? ' has-flags' : ''}`;
+}
+
+// ════════════════════════════════════════════
+// RENDER QUESTION
+// ════════════════════════════════════════════
+function renderQuestion(pos) {
+  state.current = pos;
+  const qIdx = state.quizOrder[pos];
+  const q = QUESTIONS[qIdx];
+  const total = state.quizOrder.length;
+
+  // Hide skip warning whenever we render fresh
+  document.getElementById('skipWarning').classList.remove('show');
+
+  // Review mode banner
+  const bar = document.getElementById('flagReviewBar');
+  if (state.flagReviewMode) {
+    bar.classList.add('active');
+    document.getElementById('flagReviewLabel').textContent =
+      `Reviewing flagged: ${state.flagPos + 1} of ${state.flagQueue.length}`;
+    document.getElementById('prevBtn').textContent = '← Prev Flagged';
+    document.getElementById('nextBtn').textContent = 'Next Flagged →';
+    document.getElementById('prevBtn').style.visibility = state.flagPos === 0 ? 'hidden' : '';
+    document.getElementById('nextBtn').style.visibility = state.flagPos === state.flagQueue.length - 1 ? 'hidden' : '';
+  } else {
+    bar.classList.remove('active');
+    document.getElementById('prevBtn').textContent = '← Previous';
+    document.getElementById('nextBtn').textContent = 'Next →';
+    document.getElementById('prevBtn').style.visibility = pos === 0 ? 'hidden' : '';
+    document.getElementById('nextBtn').style.visibility = pos === total - 1 ? 'hidden' : '';
+  }
+
+  document.getElementById('qCounter').textContent = state.flagReviewMode
+    ? `Q${pos + 1} · Flagged ${state.flagPos + 1}/${state.flagQueue.length}`
+    : `Question ${pos + 1} of ${total}`;
+  document.getElementById('qTopic').textContent = q.topic;
+  document.getElementById('qText').textContent = q.text;
+
+  const flagBtn = document.getElementById('flagBtn');
+  flagBtn.className = `flag-btn${state.flagged[pos] ? ' flagged' : ''}`;
+  flagBtn.textContent = state.flagged[pos] ? '🚩 Flagged' : '🚩 Flag';
+
+  const container = document.getElementById('optionsContainer');
+  const letters = ['A', 'B', 'C', 'D'];
+  container.innerHTML = '';
+  q.options.forEach((opt, oi) => {
+    const label = document.createElement('label');
+    label.className = `option${state.answers[pos] === oi ? ' selected' : ''}`;
+    label.innerHTML = `
+      <input type="radio" name="q${pos}" value="${oi}" ${state.answers[pos] === oi ? 'checked' : ''}>
+      <span class="option-letter">${letters[oi]}</span>
+      <span class="option-text">${opt}</span>`;
+    label.onclick = () => selectAnswer(pos, oi);
+    container.appendChild(label);
+  });
+
+  // Progress
+  const answered = Object.keys(state.answers).length;
+  document.getElementById('progressBar').style.width = `${(answered / total) * 100}%`;
+  document.getElementById('qProgress').textContent = `${answered}/${total} answered`;
+
+  const unanswered = total - answered;
+  document.getElementById('submitNote').textContent = unanswered > 0
+    ? `${unanswered} question${unanswered !== 1 ? 's' : ''} unanswered — will count as incorrect`
+    : 'All questions answered — ready to submit!';
+
+  updateFlaggedUI();
+  window.scrollTo(0, 0);
+}
+
+function showSkipWarning() {
+  const w = document.getElementById('skipWarning');
+  w.classList.remove('show');
+  // Force reflow so the shake animation restarts if triggered again
+  void w.offsetWidth;
+  w.classList.add('show');
+}
+
+function selectAnswer(pos, optIndex) {
+  state.answers[pos] = optIndex;
+  renderQuestion(pos);
+}
+
+function toggleFlag() {
+  const pos = state.current;
+  if (state.flagged[pos]) {
+    delete state.flagged[pos];
+  } else {
+    state.flagged[pos] = true;
+  }
+  renderQuestion(pos);
+}
+
+function navigate(dir) {
+  if (state.flagReviewMode) {
+    const next = state.flagPos + dir;
+    if (next >= 0 && next < state.flagQueue.length) {
+      state.flagPos = next;
+      renderQuestion(state.flagQueue[next]);
+    }
+    return;
+  }
+  // Going forward: must be answered or flagged
+  if (dir === 1) {
+    const pos = state.current;
+    if (state.answers[pos] === undefined && !state.flagged[pos]) {
+      showSkipWarning();
+      return;
+    }
+  }
+  const next = state.current + dir;
+  if (next >= 0 && next < state.quizOrder.length) renderQuestion(next);
+}
+
+// ════════════════════════════════════════════
+// FLAGGED REVIEW MODE
+// ════════════════════════════════════════════
+function enterFlagReview() {
+  // flagQueue holds quiz positions (not QUESTIONS indices)
+  state.flagQueue = Object.keys(state.flagged).map(Number).sort((a,b) => a-b);
+  state.flagPos = 0;
+  state.flagReviewMode = true;
+  document.getElementById('normalSubmitArea').style.display = 'none';
+  document.getElementById('reviewSubmitArea').style.display = 'block';
+  renderQuestion(state.flagQueue[0]);
+}
+
+function exitFlagReview() {
+  state.flagReviewMode = false;
+  state.flagQueue = [];
+  state.flagPos = 0;
+  document.getElementById('normalSubmitArea').style.display = 'block';
+  document.getElementById('reviewSubmitArea').style.display = 'none';
+  renderQuestion(state.current);
+}
+
+// ════════════════════════════════════════════
+// SUBMIT
+// ════════════════════════════════════════════
+function confirmSubmit() {
+  const flagCount = Object.keys(state.flagged).length;
+  if (flagCount > 0) {
+    enterFlagReview();
+  } else {
+    submitQuiz(false);
+  }
+}
+
+function submitQuiz(timeUp) {
+  if (state.submitted) return;
+  state.submitted = true;
+  clearInterval(state.timer);
+
+  const timeTaken = formatTime(state.secondsElapsed);
+
+  let correct = 0, wrong = 0, skipped = 0;
+  state.quizOrder.forEach((qIdx, pos) => {
+    if (state.answers[pos] === undefined) { skipped++; wrong++; }
+    else if (state.answers[pos] === QUESTIONS[qIdx].answer) correct++;
+    else wrong++;
+  });
+
+  const total = state.quizOrder.length;
+  const pct = Math.round((correct / total) * 100);
+  const rank = getRank(pct);
+
+  // Populate results
+  document.getElementById('resultsTitle').textContent = `Results for ${state.name}`;
+  document.getElementById('scorePct').textContent = `${pct}%`;
+  document.getElementById('scoreRaw').textContent = `${correct} / ${total}`;
+  document.getElementById('rankEmoji').textContent = rank.emoji;
+  document.getElementById('rankName').textContent = rank.name;
+  document.getElementById('rankDesc').textContent = rank.desc;
+
+  document.getElementById('statCorrect').textContent = correct;
+  document.getElementById('statWrong').textContent = wrong;
+  document.getElementById('statTime').textContent = timeTaken;
+
+  buildTopicBreakdown();
+  buildReview('all');
+  showScreen('results');
+}
+
+// ════════════════════════════════════════════
+// TOPIC BREAKDOWN
+// ════════════════════════════════════════════
+function buildTopicBreakdown() {
+  // Count total available questions per topic across the full bank
+  const bankSize = {};
+  QUESTIONS.forEach(q => { bankSize[q.topic] = (bankSize[q.topic] || 0) + 1; });
+
+  // Count results only for questions in this quiz
+  const topicMap = {};
+  state.quizOrder.forEach((qIdx, pos) => {
+    const q = QUESTIONS[qIdx];
+    if (!topicMap[q.topic]) topicMap[q.topic] = { correct: 0, asked: 0 };
+    topicMap[q.topic].asked++;
+    const userAns = state.answers[pos];
+    if (userAns === q.answer) topicMap[q.topic].correct++;
+  });
+
+  // A recommendation is only meaningful when ≥2 questions from a topic were tested
+  const MIN_FOR_RECOMMENDATION = 2;
+
+  const topics = Object.entries(topicMap).sort((a,b) => {
+    return (a[1].correct / a[1].asked) - (b[1].correct / b[1].asked);
+  });
+
+  const weak   = topics.filter(([,v]) => v.asked >= MIN_FOR_RECOMMENDATION && (v.correct / v.asked) < 0.6);
+  const strong = topics.filter(([,v]) => v.asked >= MIN_FOR_RECOMMENDATION && (v.correct / v.asked) >= 0.8);
+
+  let html = '<h2>📊 Topic Performance</h2>';
+
+  if (weak.length > 0) {
+    html += `<div class="weak-areas-box">
+      <h3>⚠️ Focus Areas — needs more revision</h3>
+      <ul>${weak.map(([t,v]) => {
+        const pct = Math.round((v.correct / v.asked) * 100);
+        return `<li>${t} (${pct}%)</li>`;
+      }).join('')}</ul>
+    </div>`;
+  }
+
+  if (strong.length > 0) {
+    html += `<div class="strong-areas-box">
+      <h3>✅ Strong Areas — keep it up!</h3>
+      <ul>${strong.map(([t,v]) => {
+        const pct = Math.round((v.correct / v.asked) * 100);
+        return `<li>${t} (${pct}%)</li>`;
+      }).join('')}</ul>
+    </div>`;
+  }
+
+  // Sort alphabetically for the bar chart — only show topics that were actually asked
+  const sortedTopics = Object.entries(topicMap).sort((a,b) => a[0].localeCompare(b[0]));
+  html += sortedTopics.map(([topic, v]) => {
+    const pct = Math.round((v.correct / v.asked) * 100);
+    const color = pct >= 80 ? 'var(--green)' : pct >= 60 ? 'var(--gold)' : 'var(--red)';
+    const bank = bankSize[topic] || v.asked;
+    const coverageNote = v.asked < bank ? ` · ${v.asked}/${bank} Qs covered` : '';
+    const label = `${v.correct}/${v.asked} correct${coverageNote}`;
+    return `<div class="topic-row">
+      <div class="topic-row-name">${topic}</div>
+      <div class="topic-bar-wrap"><div class="topic-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+      <div class="topic-row-score" style="color:${color}">${pct}%<br><span style="font-size:.72rem;color:var(--muted);font-weight:400;">${label}</span></div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('topicBreakdown').innerHTML = html;
+}
+
+// ════════════════════════════════════════════
+// REVIEW
+// ════════════════════════════════════════════
+function buildReview(filter) {
+  const list = document.getElementById('reviewList');
+  const letters = ['A', 'B', 'C', 'D'];
+  list.innerHTML = '';
+
+  state.quizOrder.forEach((qIdx, pos) => {
+    const q = QUESTIONS[qIdx];
+    const userAns = state.answers[pos];
+    const isCorrect = userAns === q.answer;
+    const isSkipped = userAns === undefined;
+
+    let type = isCorrect ? 'correct' : 'wrong';
+    if (filter !== 'all' && filter !== type) return;
+
+    const div = document.createElement('div');
+    div.className = `review-item ${type}-ans`;
+
+    const badge = isCorrect
+      ? '<span class="result-badge badge-correct">✓ Correct</span>'
+      : '<span class="result-badge badge-wrong">✗ Incorrect</span>';
+
+    const optionsHtml = q.options.map((opt, oi) => {
+      let cls = '';
+      if (oi === q.answer) cls = 'is-correct';
+      else if (oi === userAns && !isCorrect) cls = 'is-wrong-pick';
+      const icon = oi === q.answer ? '✓' : (oi === userAns && !isCorrect ? '✗' : '·');
+      return `<li class="${cls}">${icon} ${letters[oi]}. ${opt}</li>`;
+    }).join('');
+
+    div.innerHTML = `
+      <div class="review-qnum">
+        <span>Q${pos + 1} · ${q.topic}</span>
+        ${badge}
+      </div>
+      <div class="review-question">${q.text}</div>
+      <ul class="review-options-list">${optionsHtml}</ul>
+      <div class="review-ref">📖 ${q.ref}</div>`;
+
+    list.appendChild(div);
+  });
+
+  if (list.children.length === 0) {
+    list.innerHTML = '<p style="color:var(--muted);text-align:center;padding:2rem;">No questions in this category.</p>';
+  }
+}
+
+function filterReview(type, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  buildReview(type);
+}
+
+function restartQuiz() {
+  state = {
+    name: "",
+    quizOrder: [],
+    answers: {},
+    flagged: {},
+    current: 0,
+    timer: null,
+    secondsElapsed: 0,
+    submitted: false,
+    flagReviewMode: false,
+    flagQueue: [],
+    flagPos: 0
+  };
+  document.getElementById('normalSubmitArea').style.display = 'block';
+  document.getElementById('reviewSubmitArea').style.display = 'none';
+  document.getElementById('timerDisplay').textContent = '⏱ 00:00';
+  document.getElementById('playerName').value = '';
+  document.getElementById('playerName').style.borderColor = '';
+  showScreen('welcome');
+}
+</script>
+</body>
+</html>
