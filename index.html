@@ -642,6 +642,123 @@
   }
   @media (max-width: 480px) {
   }
+
+  /* ── FLASHCARDS ── */
+  #flashcards { flex-direction: column; min-height: 100vh; }
+  .fc-header {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    padding: .9rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    flex-wrap: wrap;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    width: 100%;
+  }
+  .fc-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem;
+    gap: 1.5rem;
+  }
+  .fc-card-container {
+    width: 100%;
+    max-width: 640px;
+    display: grid;
+    perspective: 1200px;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .fc-face {
+    grid-area: 1 / 1;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    border-radius: var(--radius);
+    padding: 2.5rem 2rem;
+    display: flex;
+    flex-direction: column;
+    transition: transform .55s cubic-bezier(.4,0,.2,1);
+    min-height: 280px;
+  }
+  .fc-front {
+    background: var(--card);
+    border: 1px solid var(--border);
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 1.25rem;
+  }
+  .fc-back {
+    background: var(--card);
+    border: 2px solid var(--green);
+    transform: rotateY(180deg);
+    gap: .75rem;
+  }
+  .fc-card-container.flipped .fc-front { transform: rotateY(-180deg); }
+  .fc-card-container.flipped .fc-back  { transform: rotateY(0deg); }
+  .fc-question-text {
+    font-size: 1.3rem;
+    font-weight: 600;
+    line-height: 1.5;
+    color: var(--text);
+  }
+  .fc-hint { color: var(--muted); font-size: .85rem; margin-top: auto; }
+  .fc-answer-label { color: var(--green); font-weight: 700; font-size: .85rem; }
+  .fc-answer-text { font-size: 1.15rem; font-weight: 600; color: var(--green); line-height: 1.4; }
+  .fc-all-options { list-style: none; display: flex; flex-direction: column; gap: .35rem; margin-top: .5rem; }
+  .fc-all-options li {
+    font-size: .88rem;
+    padding: .35rem .65rem;
+    border-radius: 6px;
+    color: var(--muted);
+  }
+  .fc-all-options li.is-correct-opt {
+    background: #0d3d2a;
+    color: var(--green);
+    font-weight: 600;
+  }
+  .fc-ref { font-size: .8rem; color: var(--blue); margin-top: auto; }
+  .fc-nav {
+    display: flex;
+    gap: .75rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    width: 100%;
+    max-width: 640px;
+  }
+  .fc-nav .btn { min-width: 120px; justify-content: center; }
+  .fc-topic-select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: .4rem .75rem;
+    color: var(--text);
+    font-size: .9rem;
+    cursor: pointer;
+  }
+  .fc-topic-select:focus { outline: none; border-color: var(--gold); }
+  .fc-divider { border-top: 1px solid var(--border); margin: 1.25rem 0 0; padding-top: 1.25rem; }
+  .fc-mode-btn {
+    width: 100%;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+    gap: .75rem;
+    padding: .75rem 1rem;
+    text-align: left;
+  }
+  .fc-mode-btn .mode-icon { font-size: 1.4rem; }
+  .fc-mode-btn .mode-desc { text-align: left; }
+  @media (max-width: 640px) {
+    .fc-face { padding: 1.5rem 1.25rem; }
+    .fc-question-text { font-size: 1.1rem; }
+  }
 </style>
 </head>
 <body>
@@ -671,6 +788,16 @@
         <span class="mode-icon">🔀</span>
         <span class="mode-title">Full Randomised</span>
         <span class="mode-desc">All 100 questions shuffled</span>
+      </button>
+    </div>
+    <div class="fc-divider">
+      <p class="mode-label">Or study with flashcards:</p>
+      <button class="mode-card fc-mode-btn" onclick="startFlashcards()">
+        <span class="mode-icon">🃏</span>
+        <div>
+          <span class="mode-title">Flashcard Mode</span><br>
+          <span class="mode-desc">Flip &amp; learn · topic filters · shuffle · no score</span>
+        </div>
       </button>
     </div>
     <p style="font-size:.8rem;color:var(--muted);margin-top:1rem;">6 chef ranks · answer or flag each question to progress</p>
@@ -762,6 +889,37 @@
   </div>
 
   <button class="btn btn-primary" style="max-width:300px;margin-bottom:3rem;" onclick="restartQuiz()">🔄 Try Again</button>
+</div>
+
+<!-- ══════════════ FLASHCARDS ══════════════ -->
+<div id="flashcards" class="screen">
+  <div class="fc-header">
+    <span class="user-info" id="fcName"></span>
+    <span id="fcProgress" style="color:var(--muted);font-size:.9rem;"></span>
+    <select class="fc-topic-select" id="fcTopicFilter" onchange="fcSetTopic(this.value)"></select>
+    <button class="btn btn-secondary" style="padding:.4rem 1rem;font-size:.85rem;" onclick="fcShuffle()">🔀 Shuffle</button>
+    <button class="btn btn-secondary" style="padding:.4rem 1rem;font-size:.85rem;margin-left:auto;" onclick="exitFlashcards()">✕ Exit</button>
+  </div>
+  <div class="progress-bar-outer"><div class="progress-bar-inner" id="fcProgressBar" style="width:0%"></div></div>
+  <div class="fc-body">
+    <div class="fc-card-container" id="fcCardContainer" onclick="flipCard()">
+      <div class="fc-face fc-front">
+        <span class="topic-tag" id="fcTopic"></span>
+        <div class="fc-question-text" id="fcQuestion"></div>
+        <div class="fc-hint">👆 Tap to reveal answer</div>
+      </div>
+      <div class="fc-face fc-back">
+        <div class="fc-answer-label">✓ Correct Answer</div>
+        <div class="fc-answer-text" id="fcAnswerText"></div>
+        <div class="fc-ref" id="fcRef"></div>
+      </div>
+    </div>
+    <div class="fc-nav">
+      <button class="btn btn-secondary" id="fcPrev" onclick="fcNavigate(-1)">← Previous</button>
+      <button class="btn btn-secondary" onclick="flipCard()">🔄 Flip</button>
+      <button class="btn btn-secondary" id="fcNext" onclick="fcNavigate(1)">Next →</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -2383,6 +2541,91 @@ function restartQuiz() {
   document.getElementById('playerName').style.borderColor = '';
   showScreen('welcome');
 }
+
+// ════════════════════════════════════════════
+// FLASHCARDS
+// ════════════════════════════════════════════
+let fcState = {
+  deck: [],
+  current: 0,
+  flipped: false,
+  topicFilter: 'all'
+};
+
+function startFlashcards() {
+  const nameEl = document.getElementById('playerName');
+  const name = nameEl.value.trim() || 'Chef';
+
+  fcState.topicFilter = 'all';
+  fcState.current = 0;
+  fcState.flipped = false;
+
+  const topics = [...new Set(QUESTIONS.map(q => q.topic))].sort();
+  const sel = document.getElementById('fcTopicFilter');
+  sel.innerHTML = '<option value="all">All Topics</option>' +
+    topics.map(t => `<option value="${t}">${t}</option>`).join('');
+
+  document.getElementById('fcName').textContent = `👨‍🍳 ${name}`;
+  fcState.deck = shuffle([...Array(QUESTIONS.length).keys()]);
+  showScreen('flashcards');
+  renderCard(0);
+}
+
+function renderCard(pos) {
+  fcState.current = pos;
+  fcState.flipped = false;
+  document.getElementById('fcCardContainer').classList.remove('flipped');
+
+  const q = QUESTIONS[fcState.deck[pos]];
+  const total = fcState.deck.length;
+
+  document.getElementById('fcTopic').textContent = q.topic;
+  document.getElementById('fcQuestion').textContent = q.text;
+  document.getElementById('fcAnswerText').textContent = q.options[q.answer];
+  document.getElementById('fcRef').textContent = `📖 ${q.ref}`;
+
+  document.getElementById('fcProgress').textContent = `Card ${pos + 1} of ${total}`;
+  document.getElementById('fcProgressBar').style.width = `${((pos + 1) / total) * 100}%`;
+  document.getElementById('fcPrev').style.visibility = pos === 0 ? 'hidden' : '';
+  document.getElementById('fcNext').style.visibility = pos === total - 1 ? 'hidden' : '';
+  window.scrollTo(0, 0);
+}
+
+function flipCard() {
+  fcState.flipped = !fcState.flipped;
+  document.getElementById('fcCardContainer').classList.toggle('flipped', fcState.flipped);
+}
+
+function fcNavigate(dir) {
+  const next = fcState.current + dir;
+  if (next >= 0 && next < fcState.deck.length) renderCard(next);
+}
+
+function fcShuffle() {
+  const all = [...Array(QUESTIONS.length).keys()];
+  const filtered = fcState.topicFilter === 'all'
+    ? all
+    : all.filter(i => QUESTIONS[i].topic === fcState.topicFilter);
+  fcState.deck = shuffle(filtered);
+  renderCard(0);
+}
+
+function fcSetTopic(topic) {
+  fcState.topicFilter = topic;
+  fcShuffle();
+}
+
+function exitFlashcards() {
+  showScreen('welcome');
+}
+
+// Keyboard navigation for flashcards
+document.addEventListener('keydown', e => {
+  if (!document.getElementById('flashcards').classList.contains('active')) return;
+  if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); flipCard(); }
+  if (e.key === 'ArrowLeft')  fcNavigate(-1);
+  if (e.key === 'ArrowRight') fcNavigate(1);
+});
 </script>
 </body>
 </html>
